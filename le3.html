@@ -1,0 +1,497 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>Suspect AI Demo — YouTube Style</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: Roboto, Arial, sans-serif;
+      background: #0f0f0f;
+      color: #f1f1f1;
+    }
+
+    /* Header (YouTube-like) */
+    .yt-header {
+      position: sticky;
+      top: 0;
+      z-index: 1000;
+      background: #202020;
+      border-bottom: 1px solid #303030;
+      height: 56px;
+      display: flex;
+      align-items: center;
+      padding: 0 16px;
+      gap: 16px;
+    }
+    .logo {
+      width: 90px;
+      height: 24px;
+      background: #ff0000;
+      border-radius: 3px;
+      display: grid;
+      place-items: center;
+      font-weight: 700;
+    }
+    .search {
+      flex: 1;
+      display: flex;
+      max-width: 680px;
+      margin: 0 auto;
+      gap: 8px;
+    }
+    .search input {
+      flex: 1;
+      background: #121212;
+      border: 1px solid #303030;
+      color: #f1f1f1;
+      height: 36px;
+      border-radius: 18px 0 0 18px;
+      padding: 0 12px 0 16px;
+    }
+    .search button {
+      height: 36px;
+      width: 60px;
+      background: #303030;
+      border: 1px solid #303030;
+      border-left: none;
+      color: #ddd;
+      border-radius: 0 18px 18px 0;
+      cursor: pointer;
+    }
+
+    /* Page layout: player + sidebar */
+    .page {
+      display: grid;
+      grid-template-columns: 1fr 380px;
+      gap: 24px;
+      padding: 24px;
+      max-width: 1440px;
+      margin: 0 auto;
+    }
+
+    /* Player column */
+    .player-col { min-width: 0; }
+    .player {
+      background: #000;
+      aspect-ratio: 16 / 9;
+      border-radius: 12px;
+      overflow: hidden;
+      border: 1px solid #303030;
+    }
+    .title {
+      font-size: 20px;
+      margin: 16px 0 8px;
+    }
+    .channel-row {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 12px;
+    }
+    .avatar {
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      background: radial-gradient(circle at 30% 30%, #666, #333);
+    }
+    .channel-meta {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+      font-size: 13px;
+      color: #aaa;
+    }
+    .actions {
+      margin-left: auto;
+      display: flex;
+      gap: 8px;
+    }
+    .btn {
+      background: #272727;
+      border: 1px solid #3a3a3a;
+      color: #eee;
+      border-radius: 18px;
+      padding: 8px 12px;
+      font-size: 13px;
+      cursor: pointer;
+    }
+
+    /* Recommended sidebar (droppable target) */
+    .sidebar {
+      min-width: 300px;
+    }
+    .recommended {
+      position: relative; /* anchor for dialog */
+    }
+    .shelf-title {
+      font-size: 16px;
+      margin: 0 0 12px;
+    }
+    .rec-item {
+      display: grid;
+      grid-template-columns: 168px 1fr;
+      gap: 8px;
+      margin-bottom: 12px;
+      padding: 6px;
+      border-radius: 8px;
+    }
+    .thumb {
+      width: 168px;
+      height: 94px;
+      background: linear-gradient(135deg, #2c2c2c, #1a1a1a);
+      border-radius: 8px;
+      position: relative;
+      overflow: hidden;
+    }
+    .duration {
+      position: absolute;
+      right: 6px;
+      bottom: 6px;
+      background: rgba(0,0,0,0.8);
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-size: 12px;
+      color: #f1f1f1;
+    }
+    .rec-meta {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      min-width: 0;
+    }
+    .rec-title {
+      font-size: 14px;
+      color: #e3e3e3;
+      line-height: 1.2;
+    }
+    .rec-channel, .rec-stats {
+      font-size: 12px;
+      color: #aaa;
+    }
+
+    /* Drag highlight only on recommended section */
+    .drop-highlight {
+      outline: 2px dashed #ffa54c;
+      outline-offset: 4px;
+    }
+
+    /* Floating Suspect AI button */
+    .suspect-ai {
+      position: fixed;
+      right: 24px;
+      top: 50%;
+      transform: translateY(-50%);
+      z-index: 2000;
+      background: #ff6b35;
+      color: #fff;
+      border: none;
+      border-radius: 22px;
+      padding: 10px 16px;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: grab;
+      box-shadow: 0 8px 24px rgba(255,107,53,0.3);
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      user-select: none;
+    }
+    .suspect-ai.dragging { cursor: grabbing; }
+    .suspect-ai .dot {
+      width: 12px; height: 12px; border-radius: 999px; background: #fff; color: #ff6b35;
+      display: grid; place-items: center; font-size: 10px; font-weight: 800;
+    }
+
+    /* Semi-transparent dialog anchored inside recommended */
+    .ai-dialog {
+      position: absolute;
+      max-width: 360px;
+      background: rgba(18, 18, 18, 0.6);
+      backdrop-filter: blur(8px);
+      border: 1px solid rgba(255,255,255,0.12);
+      border-radius: 12px;
+      padding: 14px;
+      box-shadow: 0 12px 36px rgba(0,0,0,0.45);
+      color: #f6f6f6;
+      z-index: 1500;
+    }
+    .dlg-title {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-weight: 700;
+      color: #ffd1b8;
+      margin-bottom: 6px;
+      font-size: 14px;
+    }
+    .dlg-body {
+      font-size: 13px;
+      color: #f1f1f1;
+      line-height: 1.4;
+    }
+    .dlg-hint {
+      margin-top: 8px;
+      font-size: 12px;
+      color: #ddd;
+      opacity: 0.9;
+    }
+    .pill {
+      display: inline-block;
+      padding: 2px 8px;
+      border-radius: 999px;
+      background: rgba(255,255,255,0.08);
+      border: 1px solid rgba(255,255,255,0.18);
+      font-size: 11px;
+      margin-right: 6px;
+    }
+  </style>
+</head>
+<body>
+  <!-- Header -->
+  <header class="yt-header">
+    <div class="logo" aria-label="Logo">YT</div>
+    <div class="search" role="search">
+      <input type="text" placeholder="Search" aria-label="Search" />
+      <button aria-label="Search">🔍</button>
+    </div>
+  </header>
+
+  <!-- Main page -->
+  <div class="page">
+    <!-- Left: Player and metadata -->
+    <section class="player-col">
+      <div class="player" aria-label="Video player area"></div>
+      <h1 class="title">How Recommenders Learn What to Play Next</h1>
+      <div class="channel-row">
+        <div class="avatar" aria-hidden="true"></div>
+        <div class="channel-meta">
+          <div>ChannelsInFocus</div>
+          <div>1.2M subscribers</div>
+        </div>
+        <div class="actions">
+          <button class="btn">Like</button>
+          <button class="btn">Share</button>
+          <button class="btn">Subscribe</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- Right: Recommended videos shelf (droppable target) -->
+    <aside class="sidebar">
+      <div class="recommended" id="recommended-shelf" aria-label="Recommended videos">
+        <h3 class="shelf-title">Recommended</h3>
+
+        <!-- Repeat a few mock recommendations -->
+        <div class="rec-item">
+          <div class="thumb"><div class="duration">12:34</div></div>
+          <div class="rec-meta">
+            <div class="rec-title">Neural Rerankers vs. Classic CF</div>
+            <div class="rec-channel">ML Patterns</div>
+            <div class="rec-stats">523K views • 2 days ago</div>
+          </div>
+        </div>
+        <div class="rec-item">
+          <div class="thumb"><div class="duration">8:05</div></div>
+          <div class="rec-meta">
+            <div class="rec-title">Embedding Retrieval 101</div>
+            <div class="rec-channel">Vector Vision</div>
+            <div class="rec-stats">231K views • 1 week ago</div>
+          </div>
+        </div>
+        <div class="rec-item">
+          <div class="thumb"><div class="duration">22:48</div></div>
+          <div class="rec-meta">
+            <div class="rec-title">Cold Start: Metadata to the Rescue</div>
+            <div class="rec-channel">RecSys Lab</div>
+            <div class="rec-stats">89K views • 5 days ago</div>
+          </div>
+        </div>
+        <div class="rec-item">
+          <div class="thumb"><div class="duration">16:12</div></div>
+          <div class="rec-meta">
+            <div class="rec-title">Diversity Caps and Novelty Boosts</div>
+            <div class="rec-channel">Rank & Explore</div>
+            <div class="rec-stats">301K views • 3 weeks ago</div>
+          </div>
+        </div>
+        <div class="rec-item">
+          <div class="thumb"><div class="duration">9:44</div></div>
+          <div class="rec-meta">
+            <div class="rec-title">Real‑time Feedback Loops</div>
+            <div class="rec-channel">Streaming Systems</div>
+            <div class="rec-stats">147K views • 1 day ago</div>
+          </div>
+        </div>
+        <div class="rec-item">
+          <div class="thumb"><div class="duration">11:02</div></div>
+          <div class="rec-meta">
+            <div class="rec-title">Multi‑Objective Ranking in Practice</div>
+            <div class="rec-channel">Decision Engines</div>
+            <div class="rec-stats">412K views • 2 months ago</div>
+          </div>
+        </div>
+      </div>
+    </aside>
+  </div>
+
+  <!-- Floating Suspect AI Button -->
+  <button class="suspect-ai" id="suspectBtn" type="button" aria-label="Drag to inspect recommendations">
+    <span class="dot">!</span> Suspect AI
+  </button>
+
+  <script>
+    (function() {
+      const btn = document.getElementById('suspectBtn');
+      const DROPPABLE = document.getElementById('recommended-shelf');
+      const DRAG_THRESHOLD = 6;
+
+      const INITIAL_POS = { right: '24px', top: '50%', left: 'auto', bottom: 'auto', transform: 'translateY(-50%)' };
+
+      function resetButton() {
+        btn.style.position = 'fixed';
+        btn.style.right = INITIAL_POS.right;
+        btn.style.top = INITIAL_POS.top;
+        btn.style.left = INITIAL_POS.left;
+        btn.style.bottom = INITIAL_POS.bottom;
+        btn.style.transform = INITIAL_POS.transform;
+        document.querySelectorAll('.ai-dialog').forEach(d => d.remove());
+        DROPPABLE.classList.remove('drop-highlight');
+      }
+
+      resetButton();
+
+      let dragging = false;
+      let moved = false;
+      let startMouseX = 0, startMouseY = 0;
+      let startLeft = 0, startTop = 0;
+
+      function hideButtonForHitTest(cb) {
+        const prev = btn.style.pointerEvents;
+        btn.style.pointerEvents = 'none';
+        const result = cb();
+        btn.style.pointerEvents = prev || 'auto';
+        return result;
+      }
+
+      function isOverDroppable(clientX, clientY) {
+        return hideButtonForHitTest(() => {
+          const el = document.elementFromPoint(clientX, clientY);
+          return !!(el && (el === DROPPABLE || el.closest('#recommended-shelf')));
+        });
+      }
+
+      function onMouseDown(e) {
+        if (e.button !== 0) return;
+        const rect = btn.getBoundingClientRect();
+        startLeft = rect.left;
+        startTop = rect.top;
+        startMouseX = e.clientX;
+        startMouseY = e.clientY;
+        dragging = true;
+        moved = false;
+        btn.classList.add('dragging');
+        btn.style.position = 'fixed';
+        btn.style.zIndex = '3000';
+        e.preventDefault();
+      }
+
+      function onMouseMove(e) {
+        if (!dragging) return;
+        const dx = e.clientX - startMouseX;
+        const dy = e.clientY - startMouseY;
+        if (!moved && Math.hypot(dx, dy) >= DRAG_THRESHOLD) moved = true;
+
+        if (moved) {
+          const maxX = window.innerWidth - btn.offsetWidth;
+          const maxY = window.innerHeight - btn.offsetHeight;
+          let newX = Math.max(0, Math.min(startLeft + dx, maxX));
+          let newY = Math.max(0, Math.min(startTop + dy, maxY));
+          btn.style.left = newX + 'px';
+          btn.style.top = newY + 'px';
+          btn.style.right = 'auto';
+          btn.style.bottom = 'auto';
+          btn.style.transform = 'none';
+
+          // Highlight only the Recommended shelf when hovered
+          if (isOverDroppable(e.clientX, e.clientY)) {
+            DROPPABLE.classList.add('drop-highlight');
+          } else {
+            DROPPABLE.classList.remove('drop-highlight');
+          }
+        }
+      }
+
+      function onMouseUp(e) {
+        if (!dragging) return;
+        dragging = false;
+        btn.classList.remove('dragging');
+
+        // Only show dialog if dragged and released over the Recommended shelf
+        if (moved && isOverDroppable(e.clientX, e.clientY)) {
+          DROPPABLE.classList.remove('drop-highlight');
+          showAIDialog(DROPPABLE, e.clientX, e.clientY);
+        } else {
+          DROPPABLE.classList.remove('drop-highlight');
+        }
+      }
+
+      function showAIDialog(container, clientX, clientY) {
+        // Remove existing dialog in shelf
+        const existing = container.querySelector('.ai-dialog');
+        if (existing) existing.remove();
+
+        const dialog = document.createElement('div');
+        dialog.className = 'ai-dialog';
+        dialog.innerHTML = `
+          <div class="dlg-title">AI signals in “Recommended”</div>
+          <div class="dlg-body">
+            <span class="pill">Candidate generation</span> Deep embeddings and collaborative filtering retrieve thousands of likely videos based on viewing patterns and content affinity, refreshed in near real time. 
+            <span class="pill">Ranking</span> A multi-objective model scores candidates for expected watch time, satisfaction, freshness, and diversity to pick the top few items. 
+            <span class="pill">Trend boosts</span> Fast-rising videos can get temporary lifts while caps prevent over-repetition from the same channel or topic.
+          </div>
+          <div class="dlg-hint">Press Esc to close and reset the button.</div>
+        `;
+
+        // Anchor inside container near pointer, clamped to bounds
+        container.style.position = container.style.position || 'relative';
+        container.appendChild(dialog);
+
+        const tRect = container.getBoundingClientRect();
+        const dRect = dialog.getBoundingClientRect();
+        let x = clientX - tRect.left + 10;
+        let y = clientY - tRect.top + 10;
+        x = Math.max(10, Math.min(x, tRect.width - dRect.width - 10));
+        y = Math.max(10, Math.min(y, tRect.height - dRect.height - 10));
+        dialog.style.left = x + 'px';
+        dialog.style.top = y + 'px';
+      }
+
+      // ESC closes dialog and resets button position
+      document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape' || e.key === 'Esc') {
+          resetButton();
+        }
+      });
+
+      // Wire events
+      btn.addEventListener('mousedown', onMouseDown);
+      document.addEventListener('mousemove', onMouseMove);
+      document.addEventListener('mouseup', onMouseUp);
+
+      // Accessibility: keyboard activation opens nothing (drop-only design), Esc resets
+      btn.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+        }
+      });
+
+      // Prevent native drag image
+      btn.addEventListener('dragstart', (e) => e.preventDefault());
+      btn.addEventListener('selectstart', (e) => e.preventDefault());
+    })();
+  </script>
+</body>
+</html>
