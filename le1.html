@@ -1,0 +1,371 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>Suspect AI Demo - LinkedIn Style</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif;
+      background-color: #f3f2ef;
+      color: #000000e6;
+    }
+    /* Header */
+    .linkedin-header {
+      background: white;
+      border-bottom: 1px solid #00000017;
+      padding: 0 16px;
+      position: sticky;
+      top: 0;
+      z-index: 1000;
+    }
+    .header-content {
+      max-width: 1128px;
+      margin: 0 auto;
+      display: flex;
+      align-items: center;
+      height: 52px;
+      gap: 24px;
+    }
+    .linkedin-logo {
+      width: 34px; height: 34px; background: #0a66c2; border-radius: 4px;
+      display: flex; align-items: center; justify-content: center; color: white; font-weight: bold; font-size: 14px;
+    }
+    .search-bar { flex: 1; max-width: 280px; position: relative; }
+    .search-input { width: 100%; height: 34px; border: none; background: #eef3f8; border-radius: 4px; padding: 0 8px 0 40px; font-size: 14px; }
+    .search-icon { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: #666; }
+    .nav-items { display: flex; gap: 32px; }
+    .nav-item { display: flex; flex-direction: column; align-items: center; gap: 2px; text-decoration: none; color: #666; font-size: 12px; min-width: 80px; }
+    .nav-item:hover { color: #000; }
+    .nav-icon { width: 24px; height: 24px; background: #666; border-radius: 2px; }
+    /* Grid */
+    .main-container {
+      max-width: 1128px; margin: 24px auto 0;
+      display: grid; grid-template-columns: 225px 1fr 300px; gap: 24px; padding: 0 16px;
+    }
+    .sidebar { display: flex; flex-direction: column; gap: 8px; }
+    .profile-card { background: white; border-radius: 8px; border: 1px solid #00000017; overflow: hidden; }
+    .profile-header { height: 54px; background: linear-gradient(135deg, #a8dadc, #457b9d); position: relative; }
+    .profile-pic {
+      width: 68px; height: 68px; border-radius: 50%; border: 2px solid white; position: absolute; bottom: -34px; left: 50%; transform: translateX(-50%);
+      background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" width="68" height="68"><circle cx="34" cy="34" r="34" fill="%23ddd"/><circle cx="34" cy="26" r="8" fill="%23999"/><path d="M20 50c0-8 6-14 14-14s14 6 14 14" fill="%23999"/></svg>');
+    }
+    .profile-info { padding: 40px 16px 16px; text-align: center; }
+    .profile-name { font-size: 16px; font-weight: 600; margin-bottom: 4px; }
+    .profile-title { font-size: 12px; color: #666; margin-bottom: 16px; }
+    .profile-stats { border-top: 1px solid #00000017; padding: 12px 16px; font-size: 12px; color: #666; }
+    /* Feed */
+    .feed-container { display: flex; flex-direction: column; gap: 8px; }
+    .create-post { background: white; border-radius: 8px; border: 1px solid #00000017; padding: 16px; }
+    .create-post-top { display: flex; gap: 12px; margin-bottom: 12px; }
+    .create-post-avatar {
+      width: 48px; height: 48px; border-radius: 50%;
+      background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" width="48" height="48"><circle cx="24" cy="24" r="24" fill="%23ddd"/><circle cx="24" cy="18" r="6" fill="%23999"/><path d="M12 36c0-6 5-10 12-10s12 4 12 10" fill="%23999"/></svg>');
+    }
+    .create-post-input { flex: 1; border: 1px solid #00000017; border-radius: 25px; padding: 12px 16px; font-size: 14px; background: #f3f2ef; }
+    .post { background: white; border-radius: 8px; border: 1px solid #00000017; padding: 16px; margin-bottom: 8px; position: relative; }
+    .post-header { display: flex; gap: 12px; margin-bottom: 12px; }
+    .post-avatar { width: 48px; height: 48px; border-radius: 50%; }
+    .post-author { flex: 1; }
+    .post-name { font-size: 14px; font-weight: 600; margin-bottom: 2px; }
+    .post-details { font-size: 12px; color: #666; }
+    .post-content { font-size: 14px; line-height: 1.4; margin-bottom: 12px; }
+    .people-you-may-know { background: white; border-radius: 8px; border: 1px solid #00000017; padding: 16px; position: relative; }
+    .section-title { font-size: 16px; font-weight: 600; margin-bottom: 16px; color: #000000e6; }
+    .people-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+    .person-card {
+      display: flex; flex-direction: column; align-items: center; padding: 16px;
+      border: 1px solid #00000017; border-radius: 8px; text-align: center; background: #fafafa; transition: box-shadow 0.2s;
+      position: relative;
+    }
+    .person-card:hover { box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
+    .person-avatar { width: 60px; height: 60px; border-radius: 50%; margin-bottom: 12px; object-fit: cover; }
+    .person-name { font-size: 14px; font-weight: 600; margin-bottom: 4px; }
+    .person-title { font-size: 12px; color: #666; margin-bottom: 8px; }
+    .connect-btn {
+      background: transparent; border: 1px solid #0a66c2; color: #0a66c2; border-radius: 16px; padding: 4px 16px; font-size: 14px; font-weight: 600; cursor: pointer; transition: all 0.2s;
+    }
+    .connect-btn:hover { background: #0a66c2; color: white; }
+    /* Right sidebar */
+    .right-sidebar { display: flex; flex-direction: column; gap: 16px; }
+    .news-card { background: white; border-radius: 8px; border: 1px solid #00000017; padding: 16px; }
+    .news-item { display: flex; gap: 8px; padding: 8px 0; border-bottom: 1px solid #00000017; }
+    .news-item:last-child { border-bottom: none; }
+    .news-bullet { width: 4px; height: 4px; background: #666; border-radius: 50%; margin-top: 6px; }
+    .news-text { font-size: 13px; color: #000000e6; }
+    .news-details { font-size: 11px; color: #666; margin-top: 2px; }
+    /* Floating Suspect AI Button */
+    .suspect-ai {
+      position: fixed; right: 24px; top: 50%; transform: translateY(-50%);
+      z-index: 9999; background: #ff6b35; color: white; border: none; border-radius: 25px; padding: 12px 20px; font-size: 14px; font-weight: 600;
+      cursor: grab; box-shadow: 0 4px 12px rgba(255,107,53,0.3); display: flex; align-items: center; gap: 8px; user-select: none; transition: transform 0.1s;
+    }
+    .suspect-ai.dragging { cursor: grabbing; }
+    .suspect-ai .icon {
+      width: 16px; height: 16px; background: white; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 10px; color: #ff6b35;
+    }
+    /* AI Dialog */
+    .ai-dialog {
+      position: absolute; max-width: 300px; background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(8px);
+      border: 1px solid rgba(0,0,0,0.1); border-radius: 12px; padding: 16px; box-shadow: 0 8px 32px rgba(0,0,0,0.2); z-index: 9998;
+    }
+    .dialog-title { font-size: 14px; font-weight: 600; color: #ff6b35; margin-bottom: 8px; display: flex; align-items: center; gap: 8px; }
+    .dialog-icon { width: 16px; height: 16px; background: #ff6b35; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; font-size: 10px; }
+    .dialog-body { font-size: 13px; color: #333; line-height: 1.4; margin-bottom: 12px; }
+    .dialog-hint { font-size: 11px; color: #666; font-style: italic; }
+    .drop-highlight { outline: 2px dashed #ff6b35; outline-offset: 2px; }
+  </style>
+</head>
+<body>
+  <!-- Header -->
+  <header class="linkedin-header">
+    <div class="header-content">
+      <div class="linkedin-logo">in</div>
+      <div class="search-bar">
+        <div class="search-icon">🔍</div>
+        <input type="text" class="search-input" placeholder="Search">
+      </div>
+      <nav class="nav-items">
+        <a href="#" class="nav-item"><div class="nav-icon"></div><span>Home</span></a>
+        <a href="#" class="nav-item"><div class="nav-icon"></div><span>Network</span></a>
+        <a href="#" class="nav-item"><div class="nav-icon"></div><span>Jobs</span></a>
+        <a href="#" class="nav-item"><div class="nav-icon"></div><span>Messages</span></a>
+      </nav>
+    </div>
+  </header>
+
+  <div class="main-container">
+    <!-- Left Sidebar -->
+    <aside class="sidebar">
+      <div class="profile-card">
+        <div class="profile-header"><div class="profile-pic"></div></div>
+        <div class="profile-info">
+          <div class="profile-name">John Smith</div>
+          <div class="profile-title">Software Engineer at Tech Corp</div>
+        </div>
+        <div class="profile-stats">
+          <div>Profile viewers: 42</div>
+          <div>Post impressions: 1,234</div>
+        </div>
+      </div>
+    </aside>
+
+    <!-- Main Feed -->
+    <main class="feed-container">
+      <div class="create-post">
+        <div class="create-post-top">
+          <div class="create-post-avatar"></div>
+          <input type="text" class="create-post-input" placeholder="Start a post">
+        </div>
+      </div>
+
+      <article class="post">
+        <div class="post-header">
+          <img class="post-avatar" src="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' width='48' height='48'><circle cx='24' cy='24' r='24' fill='%234a90e2'/><circle cx='24' cy='18' r='6' fill='white'/><path d='M12 36c0-6 5-10 12-10s12 4 12 10' fill='white'/></svg>" alt="Profile">
+          <div class="post-author">
+            <div class="post-name">Sarah Johnson</div>
+            <div class="post-details">Product Manager at InnovateTech • 2h</div>
+          </div>
+        </div>
+        <div class="post-content">
+          🚀 Excited to share our new AI-powered recommendation system that's helping users discover more relevant content!
+        </div>
+      </article>
+
+      <div class="people-you-may-know">
+        <div class="section-title">People you may know</div>
+        <div class="people-grid">
+          <div class="person-card">
+            <img class="person-avatar" src="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' width='60' height='60'><circle cx='30' cy='30' r='30' fill='%23e74c3c'/><circle cx='30' cy='22' r='8' fill='white'/><path d='M15 45c0-8 7-13 15-13s15 5 15 13' fill='white'/></svg>" alt="Alex Chen">
+            <div class="person-name">Alex Chen</div>
+            <div class="person-title">Data Scientist at AI Labs</div>
+            <button class="connect-btn">Connect</button>
+          </div>
+          <div class="person-card">
+            <img class="person-avatar" src="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' width='60' height='60'><circle cx='30' cy='30' r='30' fill='%2327ae60'/><circle cx='30' cy='22' r='8' fill='white'/><path d='M15 45c0-8 7-13 15-13s15 5 15 13' fill='white'/></svg>" alt="Maria Rodriguez">
+            <div class="person-name">Maria Rodriguez</div>
+            <div class="person-title">ML Engineer at DataCorp</div>
+            <button class="connect-btn">Connect</button>
+          </div>
+          <div class="person-card">
+            <img class="person-avatar" src="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' width='60' height='60'><circle cx='30' cy='30' r='30' fill='%239b59b6'/><circle cx='30' cy='22' r='8' fill='white'/><path d='M15 45c0-8 7-13 15-13s15 5 15 13' fill='white'/></svg>" alt="David Kim">
+            <div class="person-name">David Kim</div>
+            <div class="person-title">AI Research Lead at TechFlow</div>
+            <button class="connect-btn">Connect</button>
+          </div>
+          <div class="person-card">
+            <img class="person-avatar" src="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' width='60' height='60'><circle cx='30' cy='30' r='30' fill='%23f39c12'/><circle cx='30' cy='22' r='8' fill='white'/><path d='M15 45c0-8 7-13 15-13s15 5 15 13' fill='white'/></svg>" alt="Lisa Zhang">
+            <div class="person-name">Lisa Zhang</div>
+            <div class="person-title">Senior Developer at CloudTech</div>
+            <button class="connect-btn">Connect</button>
+          </div>
+        </div>
+      </div>
+
+      <article class="post">
+        <div class="post-header">
+          <img class="post-avatar" src="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' width='48' height='48'><circle cx='24' cy='24' r='24' fill='%23f39c12'/><circle cx='24' cy='18' r='6' fill='white'/><path d='M12 36c0-6 5-10 12-10s12 4 12 10' fill='white'/></svg>" alt="Profile">
+          <div class="post-author">
+            <div class="post-name">Michael Davis</div>
+            <div class="post-details">AI Researcher at DeepMind • 4h</div>
+          </div>
+        </div>
+        <div class="post-content">
+          💡 Combining collaborative filtering with deep learning embeddings significantly improves recommendation accuracy.
+        </div>
+      </article>
+    </main>
+
+    <!-- Right Sidebar -->
+    <aside class="right-sidebar">
+      <div class="news-card">
+        <div class="section-title">LinkedIn News</div>
+        <div class="news-item"><div class="news-bullet"></div><div><div class="news-text">AI recruitment tools gain traction</div><div class="news-details">4h • 2,341 readers</div></div></div>
+        <div class="news-item"><div class="news-bullet"></div><div><div class="news-text">Machine learning salaries surge</div><div class="news-details">6h • 1,829 readers</div></div></div>
+        <div class="news-item"><div class="news-bullet"></div><div><div class="news-text">Big Tech hiring freezes continue</div><div class="news-details">8h • 3,492 readers</div></div></div>
+      </div>
+    </aside>
+  </div>
+
+  <!-- Floating Suspect AI Button -->
+  <button class="suspect-ai" id="suspectBtn" type="button" aria-label="Drag or click to inspect">
+    <div class="icon">AI</div><span>Suspect AI</span>
+  </button>
+
+  <script>
+    (function() {
+      const btn = document.getElementById('suspectBtn');
+      const DRAG_THRESHOLD = 6; // px
+      const INITIAL_POS = { right: '24px', top: '50%', left: 'auto', bottom: 'auto', transform: 'translateY(-50%)' };
+      const DROPPABLE_SELECTOR = '.people-you-may-know'; // Only this section is valid
+  
+      let dragging = false;
+      let moved = false;
+      let startMouseX = 0, startMouseY = 0;
+      let startLeft = 0, startTop = 0;
+  
+      function resetButton() {
+        btn.style.position = 'fixed';
+        btn.style.right = INITIAL_POS.right;
+        btn.style.top = INITIAL_POS.top;
+        btn.style.left = INITIAL_POS.left;
+        btn.style.bottom = INITIAL_POS.bottom;
+        btn.style.transform = INITIAL_POS.transform;
+        document.querySelectorAll('.ai-dialog').forEach(d => d.remove());
+        document.querySelectorAll('.drop-highlight').forEach(x => x.classList.remove('drop-highlight'));
+      }
+  
+      resetButton();
+  
+      function onMouseDown(e) {
+        if (e.button !== 0) return;
+        const rect = btn.getBoundingClientRect();
+        startLeft = rect.left;
+        startTop = rect.top;
+        startMouseX = e.clientX;
+        startMouseY = e.clientY;
+        dragging = true;
+        moved = false;
+        btn.classList.add('dragging');
+        btn.style.position = 'fixed';
+        btn.style.zIndex = '10000';
+        e.preventDefault();
+      }
+  
+      function getDroppableUnderPointer(clientX, clientY) {
+        // Temporarily hide the button to see what's underneath
+        const prevPointer = btn.style.pointerEvents;
+        btn.style.pointerEvents = 'none';
+        const el = document.elementFromPoint(clientX, clientY);
+        btn.style.pointerEvents = prevPointer || 'auto';
+        if (!el) return null;
+        return el.closest(DROPPABLE_SELECTOR);
+      }
+  
+      function onMouseMove(e) {
+        if (!dragging) return;
+        const dx = e.clientX - startMouseX;
+        const dy = e.clientY - startMouseY;
+        if (!moved && Math.hypot(dx, dy) >= DRAG_THRESHOLD) moved = true;
+        if (moved) {
+          const maxX = window.innerWidth - btn.offsetWidth;
+          const maxY = window.innerHeight - btn.offsetHeight;
+          let newX = Math.max(0, Math.min(startLeft + dx, maxX));
+          let newY = Math.max(0, Math.min(startTop + dy, maxY));
+          btn.style.left = newX + 'px';
+          btn.style.top = newY + 'px';
+          btn.style.right = 'auto';
+          btn.style.bottom = 'auto';
+          btn.style.transform = 'none';
+  
+          // Highlight only the People you may know section when hovered
+          document.querySelectorAll('.drop-highlight').forEach(x => x.classList.remove('drop-highlight'));
+          const droppable = getDroppableUnderPointer(e.clientX, e.clientY);
+          if (droppable) droppable.classList.add('drop-highlight');
+        }
+      }
+  
+      function onMouseUp(e) {
+        if (!dragging) return;
+        dragging = false;
+        btn.classList.remove('dragging');
+  
+        const droppable = moved ? getDroppableUnderPointer(e.clientX, e.clientY) : null;
+  
+        document.querySelectorAll('.drop-highlight').forEach(x => x.classList.remove('drop-highlight'));
+  
+        if (moved && droppable) {
+          showAIDialog(droppable, e.clientX, e.clientY);
+        } else if (!moved) {
+          // Click: do nothing now (no popup on click), per new requirement restrict to droppable only
+        }
+      }
+  
+      function showAIDialog(droppable, clientX, clientY) {
+        // Remove any existing dialogs
+        document.querySelectorAll('.ai-dialog').forEach(d => d.remove());
+  
+        const dialog = document.createElement('div');
+        dialog.className = 'ai-dialog';
+        dialog.innerHTML = `
+          <div class="dialog-title"><div class="dialog-icon">AI</div>AI Technology Detected</div>
+          <div class="dialog-body">
+            This section likely uses recommendation models (graph proximity, embeddings, and learning-to-rank) to suggest connections.
+          </div>
+          <div class="dialog-hint">Press ESC to close and reset the button.</div>
+        `;
+  
+        // Ensure positioning context
+        const cs = getComputedStyle(droppable);
+        if (cs.position === 'static') droppable.style.position = 'relative';
+        droppable.appendChild(dialog);
+  
+        const tRect = droppable.getBoundingClientRect();
+        const dRect = dialog.getBoundingClientRect();
+        let localX = clientX - tRect.left + 10;
+        let localY = clientY - tRect.top + 10;
+        localX = Math.max(10, Math.min(localX, tRect.width - dRect.width - 10));
+        localY = Math.max(10, Math.min(localY, tRect.height - dRect.height - 10));
+        dialog.style.left = localX + 'px';
+        dialog.style.top = localY + 'px';
+      }
+  
+      // ESC key closes dialogs and resets button
+      document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape' || e.key === 'Esc') resetButton();
+      });
+  
+      // Wire events
+      btn.addEventListener('mousedown', onMouseDown);
+      document.addEventListener('mousemove', onMouseMove);
+      document.addEventListener('mouseup', onMouseUp);
+  
+      // Prevent default drag and text selection
+      btn.addEventListener('dragstart', (e) => e.preventDefault());
+      btn.addEventListener('selectstart', (e) => e.preventDefault());
+    })();
+  </script>  
+</body>
+</html>
