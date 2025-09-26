@@ -1,0 +1,502 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>Suspect AI Demo — Amazon Style</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: Arial, Helvetica, sans-serif;
+      background: #f6f6f6;
+      color: #0f1111;
+    }
+
+    /* Header (Amazon-like) */
+    .amz-header {
+      background: #131921;
+      color: #fff;
+      height: 60px;
+      display: flex;
+      align-items: center;
+      padding: 0 16px;
+      gap: 16px;
+      position: sticky;
+      top: 0;
+      z-index: 1000;
+    }
+    .logo {
+      background: #ff9900;
+      color: #131921;
+      font-weight: 800;
+      height: 36px;
+      width: 90px;
+      display: grid;
+      place-items: center;
+      border-radius: 4px;
+    }
+    .header-search {
+      flex: 1;
+      display: flex;
+      gap: 0;
+      max-width: 900px;
+      margin: 0 auto;
+    }
+    .header-search input {
+      flex: 1;
+      height: 40px;
+      border: none;
+      border-radius: 4px 0 0 4px;
+      padding: 0 12px;
+    }
+    .header-search button {
+      width: 50px;
+      border: none;
+      background: #febd69;
+      border-radius: 0 4px 4px 0;
+      cursor: pointer;
+    }
+
+    /* Page layout */
+    .page {
+      max-width: 1200px;
+      margin: 16px auto;
+      padding: 0 16px;
+      display: grid;
+      grid-template-columns: 1fr 1fr 320px;
+      gap: 24px;
+    }
+
+    /* Left: product images */
+    .images {
+      background: #fff;
+      border: 1px solid #ddd;
+      border-radius: 8px;
+      padding: 16px;
+    }
+    .hero {
+      width: 100%;
+      aspect-ratio: 1 / 1;
+      background: linear-gradient(135deg, #e9eef6, #d9e2ef);
+      border-radius: 8px;
+      border: 1px solid #e3e6e6;
+    }
+    .thumbs {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 8px;
+      margin-top: 12px;
+    }
+    .thumb {
+      height: 64px;
+      background: #f0f2f2;
+      border: 1px solid #e3e6e6;
+      border-radius: 6px;
+    }
+
+    /* Middle: product info */
+    .info {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+    .title {
+      font-size: 22px;
+      line-height: 1.2;
+    }
+    .rating {
+      font-size: 14px;
+      color: #007185;
+    }
+    .price {
+      font-size: 24px;
+      color: #B12704;
+      margin-top: 4px;
+    }
+    .bullets {
+      background: #fff;
+      border: 1px solid #ddd;
+      border-radius: 8px;
+      padding: 12px 16px;
+      font-size: 14px;
+    }
+    .bullets ul {
+      margin: 0;
+      padding-left: 20px;
+    }
+    .meta {
+      font-size: 13px;
+      color: #555;
+    }
+
+    /* Right: buy box */
+    .buybox {
+      background: #fff;
+      border: 1px solid #ddd;
+      border-radius: 8px;
+      padding: 16px;
+      height: fit-content;
+      position: sticky;
+      top: 80px;
+    }
+    .buybox .price { margin: 0 0 8px; }
+    .buybox button {
+      width: 100%;
+      height: 36px;
+      border: none;
+      border-radius: 18px;
+      cursor: pointer;
+      margin: 6px 0;
+      font-weight: 700;
+    }
+    .add { background: #ffd814; }
+    .buy { background: #ffa41c; }
+
+    /* Also bought shelf (droppable target) */
+    .shelf-wrap {
+      grid-column: 1 / -1;
+      background: #fff;
+      border: 1px solid #ddd;
+      border-radius: 8px;
+      padding: 16px;
+      margin-top: 8px;
+      position: relative; /* anchor for dialog */
+    }
+    .shelf-title {
+      font-size: 18px;
+      margin: 0 0 12px;
+    }
+    .shelf {
+      display: grid;
+      grid-template-columns: repeat(6, minmax(140px, 1fr));
+      gap: 12px;
+      overflow-x: auto;
+      padding-bottom: 8px;
+    }
+    .item {
+      border: 1px solid #e3e6e6;
+      border-radius: 6px;
+      background: #fafafa;
+      padding: 8px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      transition: box-shadow 0.15s;
+    }
+    .item:hover { box-shadow: 0 4px 12px rgba(0,0,0,0.08); }
+    .item-img {
+      width: 100%;
+      aspect-ratio: 1 / 1;
+      background: linear-gradient(135deg, #f4f7fb, #e9eef6);
+      border-radius: 6px;
+      border: 1px solid #e3e6e6;
+    }
+    .item-title {
+      font-size: 13px;
+      color: #0f1111;
+      line-height: 1.2;
+    }
+    .item-price { font-size: 14px; color: #B12704; }
+
+    /* Drag highlight only on this shelf wrapper */
+    .drop-highlight {
+      outline: 2px dashed #ffa41c;
+      outline-offset: 4px;
+    }
+
+    /* Floating Suspect AI button */
+    .suspect-ai {
+      position: fixed;
+      right: 24px;
+      top: 50%;
+      transform: translateY(-50%);
+      z-index: 2000;
+      background: #ff6b35;
+      color: #fff;
+      border: none;
+      border-radius: 22px;
+      padding: 10px 16px;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: grab;
+      box-shadow: 0 8px 24px rgba(255,107,53,0.3);
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      user-select: none;
+    }
+    .suspect-ai.dragging { cursor: grabbing; }
+    .suspect-ai .dot {
+      width: 12px; height: 12px; border-radius: 999px; background: #fff; color: #ff6b35;
+      display: grid; place-items: center; font-size: 10px; font-weight: 800;
+    }
+
+    /* Semi-transparent dialog anchored inside shelf */
+    .ai-dialog {
+      position: absolute;
+      max-width: 420px;
+      background: rgba(255,255,255,0.92);
+      backdrop-filter: blur(6px);
+      border: 1px solid rgba(0,0,0,0.12);
+      border-radius: 12px;
+      padding: 14px;
+      box-shadow: 0 12px 36px rgba(0,0,0,0.18);
+      color: #0f1111;
+      z-index: 1500;
+    }
+    .dlg-title {
+      font-weight: 800;
+      color: #cc5500;
+      margin-bottom: 6px;
+      font-size: 14px;
+    }
+    .dlg-body { font-size: 13px; line-height: 1.45; color: #111; }
+    .dlg-hint { margin-top: 8px; font-size: 12px; color: #333; }
+    .pill {
+      display: inline-block;
+      padding: 2px 8px;
+      border-radius: 999px;
+      background: rgba(255,164,28,0.15);
+      border: 1px solid rgba(255,164,28,0.45);
+      font-size: 11px;
+      margin-right: 6px;
+      color: #cc5500;
+    }
+  </style>
+</head>
+<body>
+  <!-- Header -->
+  <header class="amz-header">
+    <div class="logo" aria-label="Logo">amz</div>
+    <div class="header-search">
+      <input type="text" placeholder="Search Amazon" aria-label="Search" />
+      <button aria-label="Search">🔍</button>
+    </div>
+  </header>
+
+  <!-- Main page -->
+  <div class="page">
+    <!-- Left: Images -->
+    <section class="images" aria-label="Product images">
+      <div class="hero"></div>
+      <div class="thumbs">
+        <div class="thumb"></div>
+        <div class="thumb"></div>
+        <div class="thumb"></div>
+        <div class="thumb"></div>
+      </div>
+    </section>
+
+    <!-- Middle: Info -->
+    <section class="info" aria-label="Product information">
+      <h1 class="title">UltraComfort Ergonomic Office Chair with Lumbar Support</h1>
+      <div class="rating">★★★★☆ 4.3 | 12,483 ratings</div>
+      <div class="price">$179.99</div>
+      <div class="bullets">
+        <ul>
+          <li>Adjustable lumbar and headrest</li>
+          <li>Breathable mesh back</li>
+          <li>Silent caster wheels</li>
+          <li>Assembled in 10 minutes</li>
+        </ul>
+      </div>
+      <div class="meta">Brand: UltraComfort • Material: Mesh/Steel • Color: Black</div>
+    </section>
+
+    <!-- Right: Buy Box -->
+    <aside class="buybox" aria-label="Buy box">
+      <div class="price">$179.99</div>
+      <div>FREE Returns • FREE delivery Tuesday</div>
+      <button class="add" type="button">Add to Cart</button>
+      <button class="buy" type="button">Buy Now</button>
+      <div style="margin-top:8px; font-size:12px; color:#565959;">Ships from and sold by ACME Retail</div>
+    </aside>
+
+    <!-- Also bought shelf (droppable target) -->
+    <section class="shelf-wrap" id="also-bought" aria-label="Customers who bought this item also bought">
+      <h3 class="shelf-title">Customers who bought this item also bought</h3>
+      <div class="shelf">
+        <div class="item">
+          <div class="item-img"></div>
+          <div class="item-title">Gel Seat Cushion</div>
+          <div class="item-price">$24.99</div>
+        </div>
+        <div class="item">
+          <div class="item-img"></div>
+          <div class="item-title">Adjustable Foot Rest</div>
+          <div class="item-price">$29.99</div>
+        </div>
+        <div class="item">
+          <div class="item-img"></div>
+          <div class="item-title">Desk Mat Large</div>
+          <div class="item-price">$18.49</div>
+        </div>
+        <div class="item">
+          <div class="item-img"></div>
+          <div class="item-title">Lumbar Pillow</div>
+          <div class="item-price">$19.99</div>
+        </div>
+        <div class="item">
+          <div class="item-img"></div>
+          <div class="item-title">Cable Organizer</div>
+          <div class="item-price">$9.99</div>
+        </div>
+        <div class="item">
+          <div class="item-img"></div>
+          <div class="item-title">Wrist Rest Set</div>
+          <div class="item-price">$13.99</div>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <!-- Floating Suspect AI Button -->
+  <button class="suspect-ai" id="suspectBtn" type="button" aria-label="Drag to inspect recommendations">
+    <span class="dot">!</span> Suspect AI
+  </button>
+
+  <script>
+    (function() {
+      const btn = document.getElementById('suspectBtn');
+      const DROPPABLE = document.getElementById('also-bought');
+      const DRAG_THRESHOLD = 6;
+
+      const INITIAL_POS = { right: '24px', top: '50%', left: 'auto', bottom: 'auto', transform: 'translateY(-50%)' };
+
+      function resetButton() {
+        btn.style.position = 'fixed';
+        btn.style.right = INITIAL_POS.right;
+        btn.style.top = INITIAL_POS.top;
+        btn.style.left = INITIAL_POS.left;
+        btn.style.bottom = INITIAL_POS.bottom;
+        btn.style.transform = INITIAL_POS.transform;
+        document.querySelectorAll('.ai-dialog').forEach(d => d.remove());
+        DROPPABLE.classList.remove('drop-highlight');
+      }
+
+      resetButton();
+
+      let dragging = false;
+      let moved = false;
+      let startMouseX = 0, startMouseY = 0;
+      let startLeft = 0, startTop = 0;
+
+      function withButtonHitTestDisabled(cb) {
+        const prev = btn.style.pointerEvents;
+        btn.style.pointerEvents = 'none';
+        const res = cb();
+        btn.style.pointerEvents = prev || 'auto';
+        return res;
+      }
+
+      function isOverDroppable(clientX, clientY) {
+        return withButtonHitTestDisabled(() => {
+          const el = document.elementFromPoint(clientX, clientY);
+          return !!(el && (el === DROPPABLE || el.closest('#also-bought')));
+        });
+      }
+
+      function onMouseDown(e) {
+        if (e.button !== 0) return;
+        const rect = btn.getBoundingClientRect();
+        startLeft = rect.left;
+        startTop = rect.top;
+        startMouseX = e.clientX;
+        startMouseY = e.clientY;
+        dragging = true;
+        moved = false;
+        btn.classList.add('dragging');
+        btn.style.position = 'fixed';
+        btn.style.zIndex = '3000';
+        e.preventDefault();
+      }
+
+      function onMouseMove(e) {
+        if (!dragging) return;
+        const dx = e.clientX - startMouseX;
+        const dy = e.clientY - startMouseY;
+        if (!moved && Math.hypot(dx, dy) >= DRAG_THRESHOLD) moved = true;
+
+        if (moved) {
+          const maxX = window.innerWidth - btn.offsetWidth;
+          const maxY = window.innerHeight - btn.offsetHeight;
+          const newX = Math.max(0, Math.min(startLeft + dx, maxX));
+          const newY = Math.max(0, Math.min(startTop + dy, maxY));
+          btn.style.left = newX + 'px';
+          btn.style.top = newY + 'px';
+          btn.style.right = 'auto';
+          btn.style.bottom = 'auto';
+          btn.style.transform = 'none';
+
+          if (isOverDroppable(e.clientX, e.clientY)) {
+            DROPPABLE.classList.add('drop-highlight');
+          } else {
+            DROPPABLE.classList.remove('drop-highlight');
+          }
+        }
+      }
+
+      function onMouseUp(e) {
+        if (!dragging) return;
+        dragging = false;
+        btn.classList.remove('dragging');
+
+        if (moved && isOverDroppable(e.clientX, e.clientY)) {
+          DROPPABLE.classList.remove('drop-highlight');
+          showAIDialog(DROPPABLE, e.clientX, e.clientY);
+        } else {
+          DROPPABLE.classList.remove('drop-highlight');
+        }
+      }
+
+      function showAIDialog(container, clientX, clientY) {
+        const existing = container.querySelector('.ai-dialog');
+        if (existing) existing.remove();
+
+        const dialog = document.createElement('div');
+        dialog.className = 'ai-dialog';
+        dialog.innerHTML = `
+          <div class="dlg-title">AI signals behind “Also bought”</div>
+          <div class="dlg-body">
+            <span class="pill">Co‑purchase graph</span> “Also bought” uses aggregated baskets to connect items frequently purchased together, capturing complementary relationships beyond simple similarity. 
+            <span class="pill">Association rules</span> Market‑basket mining (e.g., Apriori) surfaces item pairs and bundles that occur above expected lift, guiding which add‑ons to show. 
+            <span class="pill">Next‑item prediction</span> Matrix factorization and sequence models (LSTM/GRU) infer embeddings and recency to predict what’s likely next in the session. 
+            <span class="pill">Context & timing</span> Buy‑box, price changes, and short‑term demand forecasts tweak ranking so relevant accessories appear when they’re most useful. 
+          </div>
+          <div class="dlg-hint">Press Esc to close and reset the button.</div>
+        `;
+
+        // Anchor near pointer within the container, clamped to bounds
+        container.style.position = container.style.position || 'relative';
+        container.appendChild(dialog);
+
+        const tRect = container.getBoundingClientRect();
+        const dRect = dialog.getBoundingClientRect();
+        let x = clientX - tRect.left + 10;
+        let y = clientY - tRect.top + 10;
+        x = Math.max(10, Math.min(x, tRect.width - dRect.width - 10));
+        y = Math.max(10, Math.min(y, tRect.height - dRect.height - 10));
+        dialog.style.left = x + 'px';
+        dialog.style.top = y + 'px';
+      }
+
+      // ESC closes dialog and resets button
+      document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape' || e.key === 'Esc') {
+          resetButton();
+        }
+      });
+
+      // Wire events
+      btn.addEventListener('mousedown', onMouseDown);
+      document.addEventListener('mousemove', onMouseMove);
+      document.addEventListener('mouseup', onMouseUp);
+
+      // Prevent native drag image and text selection
+      btn.addEventListener('dragstart', (e) => e.preventDefault());
+      btn.addEventListener('selectstart', (e) => e.preventDefault());
+    })();
+  </script>
+</body>
+</html>
