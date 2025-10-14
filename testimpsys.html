@@ -1,0 +1,358 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>LinkedIn Prototype — AI Encounter Sidebar</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <style>
+    body {
+      margin: 0;
+      font-family: "Segoe UI", "Roboto", Arial, sans-serif;
+      background: #f3f2ef;
+      color: #1a1a1a;
+    }
+    .main-container {
+      max-width: 1128px;
+      margin: 32px auto 0;
+      display: grid;
+      grid-template-columns: 225px 1fr 300px;
+      gap: 24px;
+      padding: 0 16px;
+    }
+    .panel {
+      background: #fff;
+      border-radius: 8px;
+      border: 1px solid #d1d1d1;
+      box-shadow: 0 4px 16px rgba(0,16,32,0.04);
+      padding: 16px;
+    }
+    .sidebar {
+      min-width: 0;
+    }
+    .profile-card {
+      margin-bottom: 20px;
+    }
+    .feed-container {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      min-width: 0;
+    }
+    .card {
+      background: #fff;
+      border-radius: 8px;
+      border: 1px solid #d1d1d1;
+      padding: 16px 18px 14px 18px;
+      margin-bottom: 12px;
+      min-width: 0;
+    }
+    .people-you-may-know {
+      position: relative;
+      background: #fff;
+      border-radius: 8px;
+      border: 1px solid #d1d1d1;
+      padding: 16px 18px 18px 18px;
+      margin-bottom: 12px;
+      min-width: 0;
+      transition: box-shadow 0.2s, border-color 0.2s;
+    }
+    .people-you-may-know.highlight {
+      box-shadow: 0 8px 32px rgba(106,91,255,0.11);
+      border-color: #5b5fa6;
+      background: #f7f6ff;
+    }
+    .section-title {
+      font-size: 16px;
+      font-weight: 600;
+      margin-bottom: 17px;
+      color: #252525;
+      font-family: inherit;
+      letter-spacing: 0.01em;
+    }
+    .people-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+      min-width: 0;
+    }
+    .person-card {
+      background: #f8fafd;
+      border: 1px solid #dee0ee;
+      border-radius: 8px;
+      padding: 14px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      margin-bottom: 6px;
+      box-shadow: 0 2px 8px rgba(106,91,255,0.04);
+    }
+    .person-avatar {
+      width: 60px;
+      height: 60px;
+      border-radius: 50%;
+      background: #dde0f2;
+      margin-bottom: 10px;
+    }
+    .person-name {
+      font-size: 14px;
+      font-weight: 600;
+      margin-bottom: 4px;
+      color: #313131;
+    }
+    .person-title {
+      font-size: 12px;
+      color: #636985;
+      margin-bottom: 8px;
+    }
+    .connect-btn {
+      background: #fff;
+      border: 1px solid #6b5bff;
+      color: #6b5bff;
+      border-radius: 16px;
+      padding: 4px 14px;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      margin-top: 4px;
+      transition: background 0.16s, color 0.16s;
+    }
+    .connect-btn:hover {
+      background: #6b5bff;
+      color: #fff;
+    }
+    /* --- AI Encounter Sidebar --- */
+    .ai-sidebar {
+      position: fixed;
+      right: 32px;
+      top: 100px;
+      width: 290px;
+      background: #fff;
+      border-radius: 14px;
+      border: 1px solid #d8d8ea;
+      box-shadow: 0 12px 36px rgba(90,89,196,0.11);
+      color: #25253c;
+      opacity: 0;
+      pointer-events: none;
+      z-index: 20000;
+      font-size: 15px;
+      transition: opacity 0.2s, transform 0.2s;
+      font-family: inherit;
+    }
+    .ai-sidebar.visible {
+      opacity: 1;
+      pointer-events: all;
+      transform: translateY(0);
+    }
+    .ai-bar-title {
+      font-weight: 700;
+      color: #5b5fa6;
+      cursor: pointer;
+      margin: 16px 22px 9px 22px;
+      border-bottom: 1px solid #eaeaf6;
+      padding-bottom: 8px;
+      font-size: 15px;
+      letter-spacing: 0.02em;
+    }
+    .ai-bar-title:hover { text-decoration: underline; }
+    .ai-bar-expl {
+      font-size: 14px;
+      color: #2c2f53;
+      margin: 8px 22px 20px 22px;
+      background: #f2f4ff;
+      border-radius: 7px;
+      padding: 12px;
+      box-shadow: 0 2px 8px rgba(90,89,196,0.08);
+    }
+    .ai-close {
+      text-align: right;
+      padding: 0 22px 6px;
+    }
+    .ai-close button {
+      background: transparent;
+      color: #b2b2b2;
+      border: none;
+      font-size: 16px;
+      cursor: pointer;
+      font-family: inherit;
+    }
+    .ai-close button:hover {
+      color: #5b5fa6;
+    }
+    @media (max-width: 700px) {
+      .ai-sidebar {
+        width: 90vw;
+        right: 5vw;
+        left: 5vw;
+        top: 9vh;
+      }
+      .main-container { grid-template-columns: 1fr; }
+      .panel { padding: 8px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="main-container">
+    <!-- Left Sidebar -->
+    <aside class="panel sidebar">
+      <div class="profile-card">
+        <div style="font-size:15px;font-weight:600;">John Smith</div>
+        <div style="color:#595959;">Software Engineer at Tech Corp</div>
+      </div>
+      <div>
+        <strong style="font-size:14px;color:#5b5fa6;">Trending topics:</strong>
+        <ul style="font-size:13px;color:#666;line-height:1.6;padding-left:16px;">
+          <li>Recommender Systems</li>
+          <li>Graph Embeddings</li>
+          <li>Ranking Algorithms</li>
+        </ul>
+      </div>
+    </aside>
+    <!-- Feed -->
+    <main class="feed-container">
+      <div class="card">
+        <strong>Post</strong>
+        <p>Today’s launch introduces smarter homepages with personalized activity summaries.</p>
+      </div>
+      <div class="people-you-may-know" id="pymk">
+        <div class="section-title">People you may know</div>
+        <div class="people-grid">
+          <div class="person-card">
+            <div class="person-avatar"></div>
+            <div class="person-name">Alex Chen</div>
+            <div class="person-title">Data Scientist at AI Labs</div>
+            <button class="connect-btn">Connect</button>
+          </div>
+          <div class="person-card">
+            <div class="person-avatar"></div>
+            <div class="person-name">Maria Rodriguez</div>
+            <div class="person-title">ML Engineer at DataCorp</div>
+            <button class="connect-btn">Connect</button>
+          </div>
+          <div class="person-card">
+            <div class="person-avatar"></div>
+            <div class="person-name">David Kim</div>
+            <div class="person-title">AI Research Lead at TechFlow</div>
+            <button class="connect-btn">Connect</button>
+          </div>
+          <div class="person-card">
+            <div class="person-avatar"></div>
+            <div class="person-name">Lisa Zhang</div>
+            <div class="person-title">Senior Developer at CloudTech</div>
+            <button class="connect-btn">Connect</button>
+          </div>
+        </div>
+      </div>
+      <div class="card">
+        <strong>Post</strong>
+        <p>Hiring recommendations are rolling out for recruiter productivity.</p>
+      </div>
+    </main>
+    <!-- Right sidebar -->
+    <aside class="panel">
+      <strong style="color:#5b5fa6;">LinkedIn News</strong>
+      <ul style="font-size:13px;color:#666;line-height:1.6;padding-left:16px;">
+        <li>Recommendation engines power suggestions</li>
+        <li>Personalization in feed ranking</li>
+        <li>AI for user engagement</li>
+      </ul>
+    </aside>
+  </div>
+  <!-- AI Encounter sidebar (hidden until detected) -->
+  <div class="ai-sidebar" id="aiSidebar" role="status" aria-live="polite"></div>
+  <script>
+    (function() {
+      // Updated resting time (ms)
+      const DETECT_DELAY = 1200;
+      let pymk = document.getElementById('pymk');
+      let aiSidebar = document.getElementById('aiSidebar');
+      let timer = null;
+      let active = false;
+      let expanded = false;
+
+      function showAIBar() {
+        if (!active) {
+          aiSidebar.innerHTML = (
+            `<div class="ai-bar-title" tabindex="0">AI Encountered: Recommendation Engine.</div>`
+          );
+          aiSidebar.classList.add('visible');
+          active = true;
+          expanded = false;
+          aiSidebar.querySelector('.ai-bar-title').onclick = expandAIBar;
+          aiSidebar.querySelector('.ai-bar-title').onkeydown = function(e) {
+            if (e.key === 'Enter' || e.key === ' ') {
+              expandAIBar();
+              e.preventDefault();
+            }
+          };
+        }
+      }
+      function expandAIBar() {
+        expanded = true;
+        aiSidebar.innerHTML = `
+          <div class="ai-bar-title" tabindex="0">AI Encountered: Recommendation Engine.</div>
+          <div class="ai-bar-expl">
+            LinkedIn’s “People you may know” leverages recommendation engines powered by social graph analysis, collaborative filtering, and neural embeddings.<br><br>
+            These systems analyze shared connections, profile attributes, user actions, and engagement signals to surface new networking prospects. Rankings balance relevance, diversity, and professional growth opportunity.<br><br>
+            <span style="color:#5b5fa6;font-weight:500;">Why this appears:</span>
+            AI models continuously observe hover and click data to update which profiles are most likely to facilitate career-building introductions.
+          </div>
+          <div class="ai-close"><button title="Close" aria-label="Close sidebar">&times;</button></div>
+        `;
+        aiSidebar.classList.add('visible');
+        aiSidebar.querySelector('.ai-bar-title').onclick = expandAIBar;
+        aiSidebar.querySelector('.ai-bar-title').onkeydown = function(e) {
+          if (e.key === 'Enter' || e.key === ' ') {
+            expandAIBar();
+            e.preventDefault();
+          }
+        };
+        aiSidebar.querySelector('.ai-close button').onclick = hideAIBar;
+      }
+      function hideAIBar() {
+        aiSidebar.classList.remove('visible');
+        aiSidebar.innerHTML = '';
+        active = false;
+        expanded = false;
+        clearTimeout(timer);
+        timer = null;
+      }
+      pymk.addEventListener('mouseenter', () => {
+        timer = setTimeout(() => {
+          showAIBar();
+          pymk.classList.add('highlight');
+        }, DETECT_DELAY);
+      });
+      pymk.addEventListener('mousemove', () => {
+        if (!active && !timer) {
+          timer = setTimeout(() => {
+            showAIBar();
+            pymk.classList.add('highlight');
+          }, DETECT_DELAY);
+        }
+      });
+      pymk.addEventListener('mouseleave', () => {
+        pymk.classList.remove('highlight');
+        clearTimeout(timer);
+        timer = null;
+        // Sidebar persists until user clicks elsewhere or presses Esc
+      });
+      // Hide sidebar if anywhere else on page is clicked (not inside sidebar)
+      document.body.addEventListener('click', function(e) {
+        if (active && !aiSidebar.contains(e.target)) {
+          hideAIBar();
+        }
+      });
+      // Keyboard: Esc closes
+      document.addEventListener('keydown', function(e){
+        if ((e.key === 'Escape' || e.key === 'Esc') && active) {
+          hideAIBar();
+        }
+      });
+      // Prevent sidebar from disappearing if clicking inside it
+      aiSidebar.addEventListener('click', function(e) {
+        e.stopPropagation();
+      });
+    })();
+  </script>
+</body>
+</html>
