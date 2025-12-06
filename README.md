@@ -43,3 +43,6 @@ This document details the data flow, tool chains, and exact signal structures fo
 *   **`DomMiner.js`**: Bridges the two above. It runs the loop, calls `SiteDictionary`, and `console.log("TEST_SIGNAL", ...)`
 *   **`ActionClassifier.js`**: The local "Brain". It applies rules (e.g. "Is this scroll long enough?") to filter noise.
 *   **`Perplexity API`**: The Cloud "Analyst". It takes the clean list of Actions and writes the human-readable explanation.
+
+## Project Source
+*   **TrackerToolbox**: [GitHub Repository](https://github.com/JimmyRaoUF/TrackerToolbox)
