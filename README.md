@@ -38,7 +38,7 @@ This document details the data flow, tool chains, and exact signal structures fo
 | **3. Intervention** | `ActivityInferencer.js` <br> `Perplexity API` | **Input to AI:** <br> `"- SELECTION (Label: VIDEO_PLAYER)"` | **AI Response:** "Clicking play/pause signals active engagement vs passive watching." |
 
 ## Tool Definitions
-*   **`userBehaviour.js`**: Third-party library that attaches `mousedown`, `scroll`, `keyup` listeners to the window.
+*   **`userBehaviour.js`**: Third-party library ([Source](https://github.com/JimmyRaoUF/web-user-behaviour)) that attaches `mousedown`, `scroll`, `keyup` listeners to the window.
 *   **`SiteDictionary.js`**: Custom library that checks `window.location.href` and DOM Selectors (e.g. `#movie_player`) to assign the `label`.
 *   **`DomMiner.js`**: Bridges the two above. It runs the loop, calls `SiteDictionary`, and `console.log("TEST_SIGNAL", ...)`
 *   **`ActionClassifier.js`**: The local "Brain". It applies rules (e.g. "Is this scroll long enough?") to filter noise.
