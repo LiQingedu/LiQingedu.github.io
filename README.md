@@ -2,6 +2,14 @@
 
 This document details the data flow, tool chains, and exact signal structures for the 3 key platforms.
 
+## 🛠 How to Test (Inspection Steps)
+1. **Open Console:** Right-click anywhere on the page > **Inspect** > **Console** tab.
+2. **Filter Logs:** In the "Filter" box (top of console), type `TEST_SIGNAL`.
+3. **Trigger Actions:** Perform the actions listed below (Scroll, Click, etc.).
+4. **Verify Output:** Watch for the JSON logs matching the "Data Signal" column to appear.
+
+---
+
 ## 1. Amazon (Shopping)
 **Objective:** Track potential purchases and lingering interest.
 
